@@ -18,7 +18,6 @@ class AllComposersParser(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         attribute = {a[0]: a[1] for a in attrs}
-        # print('attrs', attribute)
         title = attribute.get('title', None)
         href = attribute.get('href', None)
         attr_class = attribute.get('class', None)
