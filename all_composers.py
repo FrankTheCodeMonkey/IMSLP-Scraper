@@ -6,17 +6,15 @@ import urllib
 import csv
 
 
-
 BASE = 'https://imslp.org{}'
 COMPOSERS = BASE.format('/wiki/Category:Composers')
-PGLINK = 'categorysubcatlink'
 
-exsting_pages = set()
-
-class ComposerParser(HTMLParser):
+class AllComposersParser(HTMLParser):
     def __init__(self, csv_writer):
         HTMLParser.__init__(self)
         self.csv_writer = csv_writer
+        self.existing_pages = set()
+        self.PGLINK = 'categorysubcatlink'
 
     def handle_starttag(self, tag, attrs):
         attribute = {a[0]: a[1] for a in attrs}
@@ -27,7 +25,7 @@ class ComposerParser(HTMLParser):
 
         # Scrape the piece
         if tag == 'a':
-            if attr_class == PGLINK and title and href:
+            if attr_class == self.PGLINK and title and href:
                 # Category:Whittaker,_William_Gillies
                 self.csv_writer.writerow({
                     'Name': title.split(':')[1],
@@ -35,15 +33,15 @@ class ComposerParser(HTMLParser):
                 })
 
         # This should be a unique enough condition for nextpage
-        if attr_class == 'categorypaginglink' and (href not in exsting_pages) and ('subcatfrom' in href):
-            exsting_pages.add(href)
+        if attr_class == 'categorypaginglink' and (href not in self.existing_pages) and ('subcatfrom' in href):
+            self.existing_pages.add(href)
             do_scraping(BASE.format(href), self.csv_writer)
 
 
 def do_scraping(link, csv_writer):
     response = requests.get(link, verify=False)
     body = response.text
-    parser = ComposerParser(csv_writer)
+    parser = AllComposersParser(csv_writer)
     parser.feed(body)
 
 
@@ -55,7 +53,7 @@ if __name__ == "__main__":
     # Defect: some of the fields arent quoted
     csvfile = open(args.file, 'w', newline='')
     fieldnames = ['Name', 'Link']
-    csv_writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    csv_writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quotechar='"', quoting=csv.QUOTE_ALL)
     csv_writer.writeheader()
 
 
